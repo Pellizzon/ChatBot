@@ -1,6 +1,3 @@
-# To add a new cell, type ' '
-# To add a new markdown cell, type '  [markdown]'
-
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
@@ -95,7 +92,6 @@ def cleanText(frase):
 def getCityWeater():
     # https://www.thepythoncode.com/article/extract-weather-data-python
     # https://www.geeksforgeeks.org/how-to-extract-weather-data-from-google-in-python/
-    # city = input("De qual cidade deseja obter informações? ")
 
     url = f"https://www.google.com/search?q=weather"
     soup = BeautifulSoup(requests.get(url).content, "html.parser")
@@ -106,7 +102,7 @@ def getCityWeater():
     result["temperature"] = soup.find(
         "div", attrs={"class": "BNeawe iBp4i AP7Wnd"}
     ).text
-    # # get the day and hour now
+    # get the day and hour now
     otherInfo = soup.find("div", attrs={"class": "BNeawe tAd8D AP7Wnd"}).text
     # formatting data
     data = otherInfo.split("\n")
@@ -121,7 +117,7 @@ def getCityWeater():
 def getAccountBalance(bank):
     bal = f"{bank.getBalance():,}"
     bal = bal.replace(",", ".")
-    print(f"Você possui R${bal},00 na sua conta")
+    print(f"Você possui R${bal},00 na sua conta.")
 
 
 def getInteractionFuncion():
@@ -132,7 +128,6 @@ if __name__ == "__main__":
 
     bancoImaginario = Bank()
     bancoImaginario.setBalance(randint(0, 100_000_000))
-    print(bancoImaginario)
     # Load model
     with open("chatbot_model.sav", "rb") as f:
         vectorizer, model = pickle.load(f)
@@ -140,7 +135,7 @@ if __name__ == "__main__":
     allClasses = model.classes_
     possibleClasses = [i for i in allClasses if i != "Não sei"]
     welcomeUser(possibleClasses)
-    # TODO: partial_fit
+
     while True:
         userInput = cleanText(questionUser())
         if userInput == "tchau":
