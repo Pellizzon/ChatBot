@@ -2,6 +2,10 @@
 
 ### um chatbot capaz de responder questões relacionadas ao clima, saldo em conta, e interagir com luz/ar-condicionado.
 
+#### André Weber
+
+#### Matheus Pellizzon
+
 
 ### Estrutura
 ´´´
