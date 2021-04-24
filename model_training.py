@@ -17,14 +17,12 @@ from random import randint
 def welcomeUser(possibleClasses):
     print(
         Fore.RED
-        + f"""
-Olá usuário, sou o FoxBot. Você pode me fazer perguntas relacionadas à:
-1. {Fore.RESET + Fore.GREEN + possibleClasses[0] + Fore.RED};
-2. {Fore.RESET + Fore.GREEN + possibleClasses[1] + Fore.RED};
-3. {Fore.RESET + Fore.GREEN + possibleClasses[2] + Fore.RED};
-
-Você pode sair a qualquer momento digitando {Fore.RESET + Fore.CYAN + "tchau" + Fore.RED}.
-    """
+        + "Olá usuário, sou o FoxBot. Você pode me fazer perguntas relacionadas à:"
+    )
+    for i in range(len(possibleClasses)):
+        print(f"{Fore.RESET + Fore.GREEN + possibleClasses[i] + Fore.RED};")
+    print(
+        f"Você pode sair a qualquer momento digitando {Fore.RESET + Fore.CYAN + 'tchau' + Fore.RED}."
         + Fore.RESET
     )
 
@@ -39,7 +37,7 @@ def questionUser():
 def dealWithInput(userInput, model, vectorizer):
     newCounts = vectorizer.transform([userInput])
     prediction = model.predict(newCounts)
-    #print(Fore.GREEN + prediction[0] + Fore.RESET)
+    print(prediction[0]) if prediction[0] == "Não sei" else print("", end="")
     return newCounts, prediction[0]
 
 
@@ -49,17 +47,12 @@ def isUserSatisfied():
     )
 
 
-def correctionUser(model, userInputVectorized, allClasses):
-    print(
-        Fore.RED
-        + f"""
-1. {Fore.RESET + Fore.GREEN + allClasses[0] + Fore.RED};
-2. {Fore.RESET + Fore.GREEN + allClasses[1] + Fore.RED};
-3. {Fore.RESET + Fore.GREEN + allClasses[2] + Fore.RED};
-4. {Fore.RESET + Fore.GREEN + allClasses[3] + Fore.RED};
-"""
-        + Fore.RESET
-    )
+def correctionUser(model, userInputVectorized, allClasses, sub_models, sub_inputs):
+    print(Fore.RED)
+    for i in range(len(allClasses)):
+        print(f"{i + 1}: {Fore.RESET + Fore.GREEN + allClasses[i] + Fore.RED};")
+    print(Fore.RESET)
+
     while True:
         correction = input(
             Fore.RED
@@ -69,11 +62,47 @@ def correctionUser(model, userInputVectorized, allClasses):
         if correction in ["1", "2", "3", "4"]:
             correction = int(correction) - 1
 
+            print(allClasses[correction])
+
             model.partial_fit(
                 userInputVectorized,
                 [allClasses[correction]],
                 classes=allClasses,
             )
+
+            if correction == 0:  # queremos classificador de conta
+                sub_model = sub_models[0]
+                subInput = sub_inputs[0]
+            elif correction == 1:  # queremos classificador de luz
+                sub_model = sub_models[1]
+                subInput = sub_inputs[1]
+            elif correction == 2:  # não sei, não há subclassificador
+                print(Fore.CYAN + "Obrigado por melhorar o FoxBot" + Fore.RESET)
+                break
+            elif correction == 3:  # queremos classificador do clima
+                sub_model = sub_models[2]
+                subInput = sub_inputs[2]
+
+            # Correction for sub intentions
+            print(Fore.RED)
+            for i in range(len(sub_model.classes_)):
+                print(
+                    f"{i + 1}: {Fore.RESET + Fore.GREEN + sub_model.classes_[i] + Fore.RED};"
+                )
+            print(Fore.RESET)
+
+            sub_correction = input(
+                Fore.RED + "Qual das opções acima você queria?: " + Fore.RESET
+            )
+
+            if sub_correction in ["1", "2"]:
+                sub_correction = int(sub_correction) - 1
+
+                sub_model.partial_fit(
+                    subInput,
+                    [sub_model.classes_[sub_correction]],
+                    classes=sub_model.classes_,
+                )
 
             print(Fore.CYAN + "Obrigado por melhorar o FoxBot" + Fore.RESET)
             break
@@ -81,12 +110,11 @@ def correctionUser(model, userInputVectorized, allClasses):
             continue
 
 
-
 def cleanText(frase):
     frase = frase.lower()
     frase = frase.replace("-", " ")
     frase = re.sub(r"[^$\w\s]", "", frase)
-    frase = frase.replace("$","dinheiro")
+    frase = frase.replace("$", "dinheiro")
     frase = frase.replace("foxbot", "")
     return frase
 
@@ -115,11 +143,14 @@ def getCityWeather():
     print(f"Temperatura: {result['temperature']}")
     print(f"{result['time']}, {result['sky']}")
 
+
 def getPrecipitation():
     url = f"https://weather.com/pt-BR/clima/hoje/l/63e18eea74a484c42c3921cf52a8fec98113dbb13f6deb7c477b2f453c95b837"
     soup = BeautifulSoup(requests.get(url).content, "html.parser")
 
-    result = soup.find("div", attrs={"class": "CurrentConditions--precipValue--RBVJT"}).text
+    result = soup.find(
+        "div", attrs={"class": "CurrentConditions--precipValue--RBVJT"}
+    ).text
     result = result.replace("probab.", "probabilidade")
 
     print(result)
@@ -130,6 +161,7 @@ def getAccountBalance(bank):
     bal = bal.replace(",", ".")
     print(f"Você possui R${bal},00 na sua conta-corrente.")
 
+
 def getAccountSavings(bank):
     sav = f"{bank.getSavings():,}"
     sav = sav.replace(",", ".")
@@ -138,14 +170,15 @@ def getAccountSavings(bank):
 
 def setAirState(air):
     air.setState()
-    if (air.getState()):
+    if air.getState():
         print("Ligando ar-condicionado")
     else:
         print("Desligando ar-condicionado")
 
+
 def setLightState(light):
     light.setState()
-    if (light.getState()):
+    if light.getState():
         print("Ligando luz")
     else:
         print("Desligando luz")
@@ -161,7 +194,7 @@ if __name__ == "__main__":
     # Load model
     with open("model_generic.sav", "rb") as f:
         vectorizer, model = pickle.load(f)
-    
+
     with open("model_account.sav", "rb") as f:
         vectorizer_account, model_account = pickle.load(f)
 
@@ -182,11 +215,17 @@ if __name__ == "__main__":
             exit()
 
         userInputVectorized, prediction = dealWithInput(userInput, model, vectorizer)
+        userInputVectorized_weather, prediction_weather = dealWithInput(
+            userInput, model_weather, vectorizer_weather
+        )
+        userInputVectorized_account, prediction_account = dealWithInput(
+            userInput, model_account, vectorizer_account
+        )
+        userInputVectorized_eletro, prediction_eletro = dealWithInput(
+            userInput, model_eletro, vectorizer_eletro
+        )
 
-    
         if prediction == "Obter informações relativas ao clima":
-            userInputVectorized_weather, prediction_weather = dealWithInput(userInput, model_weather, vectorizer_weather)
-
             if prediction_weather == "Chuva":
                 getPrecipitation()
 
@@ -194,21 +233,17 @@ if __name__ == "__main__":
                 getCityWeather()
 
         elif prediction == "Consultar saldo da conta":
-            userInputVectorized_account, prediction_account = dealWithInput(userInput, model_account, vectorizer_account)
-
-            if (prediction_account == "Consultar saldo da conta-corrente"):
+            if prediction_account == "Consultar saldo da conta-corrente":
                 getAccountBalance(bancoImaginario)
 
-            elif (prediction_account == "Consultar saldo da poupança"):
+            elif prediction_account == "Consultar saldo da poupança":
                 getAccountSavings(bancoImaginario)
 
         elif prediction == "Interagir com a luz ou o ar-condicionado":
-            userInputVectorized_eletro, prediction_eletro = dealWithInput(userInput, model_eletro, vectorizer_eletro)
-
-            if (prediction_eletro == "Ar-condicionado"): 
+            if prediction_eletro == "Ar-condicionado":
                 setAirState(arImaginario)
-            
-            elif (prediction_eletro == "Luz"):
+
+            elif prediction_eletro == "Luz":
                 setLightState(luzImaginaria)
         else:
             pass
@@ -216,6 +251,17 @@ if __name__ == "__main__":
         satisfied = isUserSatisfied()
 
         if satisfied == "n":
-            correctionUser(model, userInputVectorized, allClasses)
+            correctionUser(
+                model,
+                userInputVectorized,
+                allClasses,
+                [model_account, model_eletro, model_weather],
+                [
+                    userInputVectorized_account,
+                    userInputVectorized_eletro,
+                    userInputVectorized_weather,
+                ],
+            )
+            pass
         else:
             continue
